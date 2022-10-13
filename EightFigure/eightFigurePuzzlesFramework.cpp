@@ -1,33 +1,88 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include<stack>
 #include<map>
 #include <time.h>
 #include "eightFigurePuzzles.h"
 #include <windows.h>
 using namespace std;
 
-//ÓÃÓÚ¼ÇÂ¼µ±Ç°×´Ì¬ÊÇ·ñ±»·ÃÎÊ¹ı¡£
+//ç”¨äºè®°å½•å½“å‰çŠ¶æ€æ˜¯å¦è¢«è®¿é—®è¿‡ã€‚
 map<int, int> visited;
 
-//Éî¶ÈÓĞÏŞËÑË÷£¬ÓÃÓÚÏŞÖÆÉî¶È¡£
+//æ·±åº¦æœ‰é™æœç´¢ï¼Œç”¨äºé™åˆ¶æ·±åº¦ã€‚ç”±äºæœ€å¤§æ·±åº¦ä¸è¶…è¿‡20ï¼Œä¸”é‡å¤æƒ…å†µè¾ƒå¤šï¼Œå› æ­¤æ­¤å¤„è®¾ç½®ä¸º15
 #define MAX_DEPTH 20
 
-//openListÓëcloseListÓÃÓÚA*ËÑË÷¡£
-vector<PUZZLE_NODE> closeList;
-vector<PUZZLE_NODE> openList;
 
-
-//¹ã¶ÈÓÅÏÈËÑË÷
+//å¹¿åº¦ä¼˜å…ˆæœç´¢
 int* binaryFirstSearch(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode)
 {
 	//result[0] 1:correct;0:wrong
-//result[1] ²½Êı steps 
+//result[1] æ­¥æ•° steps 
 	int result[2] = { 0,0 };
 
 	/*
-		ÇëÔÚ¸ÃÎ»ÖÃÍê³É¹ã¶ÈÓÅÏÈËÑË÷¡£
+		è¯·åœ¨è¯¥ä½ç½®å®Œæˆå¹¿åº¦ä¼˜å…ˆæœç´¢ã€‚
 	*/
+
+	cout << "åˆå§‹èŠ‚ç‚¹çŠ¶æ€ï¼š" << endl;
+	for (int i = 0; i < 3; i++) {
+		cout << " " << initialNode.puzzle[i * 3 + 0].puzzleId << "  " << initialNode.puzzle[i * 3 + 1].puzzleId <<
+			"  " << initialNode.puzzle[i * 3 + 2].puzzleId << endl;
+	}
+	cout << endl;
+	PUZZLE_NODE puzzleNode = initialNode;
+	queue<PUZZLE_NODE> puzzleQueue;//å¹¿åº¦ä¼˜å…ˆæ ˆ
+	puzzleNode.depth = 0;
+	int depth = 0;
+	puzzleQueue.push(puzzleNode);//åˆå§‹èŠ‚ç‚¹å…¥é˜Ÿ
+	while (puzzleQueue.size()) {
+		PUZZLE_NODE currentNode = puzzleQueue.front();
+		if (checkObject(currentNode, objPuzzleNode)) //æ‰¾åˆ°ç›®æ ‡
+		{
+
+			for (int i = 0; i < currentNode.precedeActionList.size(); i++) {
+				outputAction(currentNode.precedeActionList[i], i + 1);
+			}
+			cout << "æ‰¾åˆ°æ­£ç¡®ç»“æœ:" << endl;
+			for (int i = 0; i < 3; i++) {
+				cout << " " << currentNode.puzzle[i * 3 + 0].puzzleId << "  " << currentNode.puzzle[i * 3 + 1].puzzleId <<
+					"  " << currentNode.puzzle[i * 3 + 2].puzzleId << endl;
+			}
+			cout << endl;
+
+			result[0] = 1;
+			result[1] = currentNode.depth;
+			return result;
+		}
+		else//æ²¡æ‰¾åˆ°ç›®æ ‡
+		{
+			visited[visitedNum(currentNode)] = 1;//æ·»åŠ å½“å‰èŠ‚ç‚¹çš„è®¿é—®è®°å½•
+			if (currentNode.nextActionList.size() == 0) {
+				currentNode = updatePuzzleNodeActionList(currentNode);
+			}
+			puzzleQueue.pop();//å½“å‰èŠ‚ç‚¹å‡ºé˜Ÿ
+			for (int i = 0; i < currentNode.nextActionList.size(); i++) //ä¾æ¬¡è®¿é—®æ¯ä¸€ä¸ªå¯èƒ½åç»§
+			{
+				PUZZLE_NODE nextNode = moveToPuzzleNode(currentNode.nextActionList[i], currentNode);
+				if (!currentNode.precedeActionList.empty()) {
+					for (int actionIndex = 0; actionIndex < currentNode.precedeActionList.size(); actionIndex++)//ä¾æ¬¡æ·»åŠ è·¯å¾„è®°å½•
+					{
+						nextNode.precedeActionList.push_back(currentNode.precedeActionList[actionIndex]);
+					}
+				}
+				nextNode.precedeActionList.push_back(currentNode.nextActionList[i]);
+				if (visited[visitedNum(nextNode)] == 1) {
+					continue;
+				}
+				nextNode.depth = currentNode.depth + 1;
+				puzzleQueue.push(nextNode);
+			}
+		}
+
+	}
+
 
 
 	if (checkObject(initialNode, objPuzzleNode)) {
@@ -41,84 +96,302 @@ int* binaryFirstSearch(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode)
 
 }
 
-//Éî¶ÈÓĞÏŞËÑË÷
+//æ·±åº¦æœ‰é™æœç´¢
 int* depthFirstSearch(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode) {
 
 	//result[0] 1:correct;0:wrong
-	//result[1] ²½Êı steps 
+	//result[1] æ­¥æ•° steps 
 	int result[2] = { 0,0 };
 	/*
-		ÇëÔÚ¸ÃÎ»ÖÃÍê³ÉÉî¶ÈÓĞÏŞËÑË÷£¬×î´óÉî¶ÈÏŞ¶ÈÎª25¡£
+		è¯·åœ¨è¯¥ä½ç½®å®Œæˆæ·±åº¦æœ‰é™æœç´¢ï¼Œæœ€å¤§æ·±åº¦é™åº¦ä¸º25ã€‚
 	*/
 
-
-	if (checkObject(initialNode, objPuzzleNode) && initialNode.depth < MAX_DEPTH) {
-		result[0] = 1;
+	cout << "åˆå§‹èŠ‚ç‚¹çŠ¶æ€ï¼š" << endl;
+	for (int i = 0; i < 3; i++) {
+		cout << " " << initialNode.puzzle[i * 3 + 0].puzzleId << "  " << initialNode.puzzle[i * 3 + 1].puzzleId <<
+			"  " << initialNode.puzzle[i * 3 + 2].puzzleId << endl;
 	}
-	else {
-		result[0] = 0;
-	}
+	cout << endl;
 
-	return result;
+	PUZZLE_NODE puzzleNode = initialNode;
+	stack<PUZZLE_NODE> puzzleNodeStack;//è®°å½•æœç´¢é¡ºåºçš„æ ˆ
+	stack<PUZZLE_NODE> reverseStack;//å°†æŸä¸€ç»“ç‚¹æœç´¢é¡ºåºå€’ç½®ï¼Œå®Œæˆæ·±åº¦ä¼˜å…ˆéå†
+	puzzleNode.depth = 0;
+	int depth = 0;
+	puzzleNodeStack.push(puzzleNode);//åˆå§‹ä½ç½®å…¥æ ˆ
+	PUZZLE_NODE temp;//ä¸´æ—¶èŠ‚ç‚¹ï¼Œç”¨äºäº¤æ¢
+	int nextsize;//æŸä¸€èŠ‚ç‚¹å¯è¡Œèµ°æ³•ä¸ªæ•°
+	while (!puzzleNodeStack.empty())//æ ˆéç©ºï¼šæœªå®Œæˆéå†
+	{
+		PUZZLE_NODE currentPuzzleNode = puzzleNodeStack.top();
+		if (checkObject(currentPuzzleNode, objPuzzleNode)) //æ‰¾åˆ°ç›®æ ‡ï¼Œè¿”å›ç›®æ ‡èŠ‚ç‚¹
+		{
+
+			for (int i = 0; i < currentPuzzleNode.precedeActionList.size(); i++) {
+				outputAction(currentPuzzleNode.precedeActionList[i], i + 1);
+			}
+			cout << "æ‰¾åˆ°æ­£ç¡®ç»“æœ:" << endl;
+			for (int i = 0; i < 3; i++) {
+				cout << " " << currentPuzzleNode.puzzle[i * 3 + 0].puzzleId << "  " << currentPuzzleNode.puzzle[i * 3 + 1].puzzleId <<
+					"  " << currentPuzzleNode.puzzle[i * 3 + 2].puzzleId << endl;
+			}
+			cout << endl;
+
+			result[0] = 1;
+			result[1] = currentPuzzleNode.depth;
+			return result;
+		}
+		else
+		{
+			visited[visitedNum(currentPuzzleNode)] = 1;//è®°å½•å·²åˆ°è¾¾èŠ‚ç‚¹
+				
+			while (currentPuzzleNode.depth >= MAX_DEPTH)//æ·±åº¦é™åˆ¶
+			{
+				puzzleNodeStack.pop();
+				currentPuzzleNode = puzzleNodeStack.top();
+			}
+
+			currentPuzzleNode = puzzleNodeStack.top();
+
+			if (!puzzleNodeStack.empty())
+			{
+				if (currentPuzzleNode.nextActionList.size() == 0) {
+					currentPuzzleNode = updatePuzzleNodeActionList(currentPuzzleNode);
+				}
+
+				puzzleNodeStack.pop();
+
+				nextsize = currentPuzzleNode.nextActionList.size();
+				int* randomexplore = new int[nextsize];
+
+				for (int i = 0; i < nextsize; i++)
+				{
+					randomexplore[i] = i;
+				}
+				for (int i = 0; i<10; i++)//éšæœºé‡ç½®éå†é¡ºåº
+				{
+					//è¦å–å¾— [a,b) çš„éšæœºæ•´æ•°ï¼Œä½¿ç”¨ (rand() % (b-a))+ a;
+					int random1 = (rand() % (nextsize - 0)) + 0;
+					int random2 = (rand() % (nextsize - 0)) + 0;
+					int temp = randomexplore[random1];
+					randomexplore[random1] = randomexplore[random2];
+					randomexplore[random2] = temp;
+				}
+
+				int i = 0;
+				//éšæœºé¡ºåºéå†
+				//for (int j = 0; j < currentPuzzleNode.nextActionList.size();++j) {
+				//	i = randomexplore[j];
+
+				//æŒ‰å›ºå®šé¡ºåºéå†ï¼ˆä¸Šä¸‹å·¦å³ï¼‰
+				for (int i = 0; i < currentPuzzleNode.nextActionList.size(); i++) {
+
+					PUZZLE_NODE nextPuzzleNode = moveToPuzzleNode(currentPuzzleNode.nextActionList[i], currentPuzzleNode);
+					if (!currentPuzzleNode.precedeActionList.empty()) 
+					{
+						for (int actionIndex = 0; actionIndex < currentPuzzleNode.precedeActionList.size(); actionIndex++)
+						{
+							nextPuzzleNode.precedeActionList.push_back(currentPuzzleNode.precedeActionList[actionIndex]);//æ·»åŠ è®¿é—®è®°å½•
+						}
+					}
+					nextPuzzleNode.precedeActionList.push_back(currentPuzzleNode.nextActionList[i]);
+					if (visited[visitedNum(nextPuzzleNode)] == 1) //å·²è®¿é—®èŠ‚ç‚¹ä¸å†è®¿é—®
+					{
+						continue;
+					}
+					else
+					{
+						nextPuzzleNode.depth = currentPuzzleNode.depth + 1;
+						puzzleNodeStack.push(nextPuzzleNode);//èŠ‚ç‚¹å…¥æ ˆ
+					}
+				}
+				//while (!reverseStack.empty())
+				//{
+				//	temp = reverseStack.top();
+				//	puzzleNodeStack.push(temp);
+				//	reverseStack.pop();
+				//}
+			}
+			else
+				return result;
+		}
+	}
 }
 
 
-//Æô·¢Ê½ËÑË÷1
+//å¯å‘å¼æœç´¢1
 int* heuristicSearchInformedByIncorrectNum(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode) {
 	//result[0] 1:correct;0:wrong
-	//result[1] ²½Êı steps 
+	//result[1] æ­¥æ•° steps 
 	int result[2] = { 0,0 };
 
-	/*
-		ÇëÔÚ¸ÃÎ»ÖÃÍê³ÉÆô·¢Ê½ËÑË÷£¬Æô·¢Ê½º¯ÊıÊ¹ÓÃ²»ÕıÈ·Î»ÖÃµÄÊıÂë¸öÊı¡£
-	*/
-
-
-	if (checkObject(initialNode, objPuzzleNode)) {
-		result[0] = 1;
+	cout << "åˆå§‹èŠ‚ç‚¹çŠ¶æ€ï¼š" << endl;
+	for (int i = 0; i < 3; i++) {
+		cout << " " << initialNode.puzzle[i * 3 + 0].puzzleId << "  " << initialNode.puzzle[i * 3 + 1].puzzleId <<
+			"  " << initialNode.puzzle[i * 3 + 2].puzzleId << endl;
 	}
-	else {
-		result[0] = 0;
+	cout << endl;
+
+	/*
+		è¯·åœ¨è¯¥ä½ç½®å®Œæˆå¯å‘å¼æœç´¢ï¼Œå¯å‘å¼å‡½æ•°ä½¿ç”¨ä¸æ­£ç¡®ä½ç½®çš„æ•°ç ä¸ªæ•°ã€‚
+	*/
+	vector<PUZZLE_NODE> puzzleNodeVector;//è®°å½•æ‰€æœ‰å¯èƒ½åç»§ï¼ˆA*ï¼‰
+	PUZZLE_NODE currentPuzzleNode = initialNode;
+	while (IncorrectNum(currentPuzzleNode, objPuzzleNode) != 0)//æœªè¾¾åˆ°ç›®æ ‡èŠ‚ç‚¹
+	{
+
+		visited[visitedNum(currentPuzzleNode)] = 1;//æ·»åŠ è®¿é—®è®°å½•
+
+		for (int i = 0; i < currentPuzzleNode.nextActionList.size(); ++i)//ä¾æ¬¡è®¿é—®æ‰€æœ‰åç»§
+		{
+			PUZZLE_NODE nextpuzzleNode = moveToPuzzleNode(currentPuzzleNode.nextActionList[i], currentPuzzleNode);
+			nextpuzzleNode.depth = currentPuzzleNode.depth;
+			nextpuzzleNode.precedeActionList = currentPuzzleNode.precedeActionList;
+			nextpuzzleNode = updatePuzzleNodeActionList(nextpuzzleNode);
+			if (visited[visitedNum(nextpuzzleNode)] == 1) //è¯¥èŠ‚ç‚¹å·²è¢«è®¿é—®è¿‡
+			{
+				continue;
+			}
+			nextpuzzleNode.precedeActionList.push_back(currentPuzzleNode.nextActionList[i]);
+			nextpuzzleNode.depth++;
+			puzzleNodeVector.push_back(nextpuzzleNode);//å°†è¯¥åç»§èŠ‚ç‚¹å¦‚æ•°ç»„ï¼Œå³ä½œä¸ºä¸‹æ¬¡é€‰æ‹©çš„å¤‡é€‰æ–¹æ¡ˆä¹‹ä¸€
+		}
+		int min_cost = 1000;
+		int min_location = 0;
+
+		for (int i = 0; i < puzzleNodeVector.size(); ++i)//é€‰å‡ºvectorä¸­å¯å‘å¼å‡½æ•°å€¼æœ€å°çš„èŠ‚ç‚¹ï¼Œå°†å…¶ä½œä¸ºä¸‹ä¸€æ¬¡çš„èŠ‚ç‚¹
+		{
+			if ((puzzleNodeVector[i].depth + 10*IncorrectNum(puzzleNodeVector[i], objPuzzleNode)) <= min_cost)
+			{
+				min_location = i;
+				min_cost = puzzleNodeVector[i].depth + 10*IncorrectNum(puzzleNodeVector[i], objPuzzleNode);
+				currentPuzzleNode = puzzleNodeVector[i];
+			}
+		}
+
+		ExchangePuzzleNode(puzzleNodeVector[min_location], puzzleNodeVector.back());//å°†æœ€ä¼˜èŠ‚ç‚¹ä¸æœ€åä¸€ä¸ªèŠ‚ç‚¹äº¤æ¢
+		puzzleNodeVector.pop_back();//åœ¨vectorä¸­åˆ é™¤æœ€ä¼˜è§£ï¼Œä»¥è¿›è¡Œä¸‹ä¸€æ­¥è¿­ä»£
+
+		if (currentPuzzleNode.nextActionList.size() == 0) {
+			currentPuzzleNode = updatePuzzleNodeActionList(currentPuzzleNode);
+		}
+
+	}
+
+	if (checkObject(currentPuzzleNode, objPuzzleNode))//æ‰¾åˆ°ç›®æ ‡ç»“æœ
+	{
+
+		for (int i = 0; i < currentPuzzleNode.precedeActionList.size(); i++) {
+			outputAction(currentPuzzleNode.precedeActionList[i], i + 1);
+		}
+		cout << "æ‰¾åˆ°æ­£ç¡®ç»“æœ:" << endl;
+		for (int i = 0; i < 3; i++) {
+			cout << " " << currentPuzzleNode.puzzle[i * 3 + 0].puzzleId << "  " << currentPuzzleNode.puzzle[i * 3 + 1].puzzleId <<
+				"  " << currentPuzzleNode.puzzle[i * 3 + 2].puzzleId << endl;
+		}
+		cout << endl;
+
+		result[0] = 1;
+		result[1] = currentPuzzleNode.depth;
+		return result;
 	}
 
 	return result;
 }
 
-//Æô·¢Ê½ËÑËØ2
+//å¯å‘å¼æœç´ 2
 int* heuristicSearchInformedByManhattonDis(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode) {
 	//result[0] 1:correct;0:wrong
-	//result[1] ²½Êı steps 
+	//result[1] æ­¥æ•° steps 
 	int result[2] = { 0,0 };
-	/*
-		ÇëÔÚ¸ÃÎ»ÖÃÍê³ÉÆô·¢Ê½ËÑË÷£¬Æô·¢Ê½º¯Êı²ÉÓÃµ½Ä¿±êÎ»ÖÃµÄÂü¹ş¶Ù¾àÀë¡£
-	*/
 
-
-	if (checkObject(initialNode, objPuzzleNode)) {
-		result[0] = 1;
+	cout << "åˆå§‹èŠ‚ç‚¹çŠ¶æ€ï¼š" << endl;
+	for (int i = 0; i < 3; i++) {
+		cout << " " << initialNode.puzzle[i * 3 + 0].puzzleId << "  " << initialNode.puzzle[i * 3 + 1].puzzleId <<
+			"  " << initialNode.puzzle[i * 3 + 2].puzzleId << endl;
 	}
-	else {
-		result[0] = 0;
+	cout << endl;
+
+	/*
+		è¯·åœ¨è¯¥ä½ç½®å®Œæˆå¯å‘å¼æœç´¢ï¼Œå¯å‘å¼å‡½æ•°ä½¿ç”¨ä¸æ­£ç¡®ä½ç½®çš„æ•°ç ä¸ªæ•°ã€‚
+	*/
+	vector<PUZZLE_NODE> puzzleNodeVector;
+	PUZZLE_NODE currentPuzzleNode = initialNode;
+	while (Manhattan(currentPuzzleNode, objPuzzleNode) != 0)
+	{
+
+		visited[visitedNum(currentPuzzleNode)] = 1;
+
+
+		int x = Manhattan(currentPuzzleNode, objPuzzleNode);
+		for (int i = 0; i < currentPuzzleNode.nextActionList.size(); ++i)
+		{
+			PUZZLE_NODE nextpuzzleNode = moveToPuzzleNode(currentPuzzleNode.nextActionList[i], currentPuzzleNode);
+			nextpuzzleNode.depth = currentPuzzleNode.depth;
+			nextpuzzleNode.precedeActionList = currentPuzzleNode.precedeActionList;
+			nextpuzzleNode = updatePuzzleNodeActionList(nextpuzzleNode);
+			if (visited[visitedNum(nextpuzzleNode)] == 1) {
+				continue;
+			}
+			nextpuzzleNode.precedeActionList.push_back(currentPuzzleNode.nextActionList[i]);
+			nextpuzzleNode.depth++;
+			puzzleNodeVector.push_back(nextpuzzleNode);
+		}
+		int min_cost = 1000;
+		int min_location = 0;
+		for (int i = 0; i < puzzleNodeVector.size(); ++i)
+		{
+			if ((puzzleNodeVector[i].depth + Manhattan(puzzleNodeVector[i], objPuzzleNode)) <= min_cost)
+			{
+				min_location = i;
+				min_cost = puzzleNodeVector[i].depth + Manhattan(puzzleNodeVector[i], objPuzzleNode);
+				currentPuzzleNode = puzzleNodeVector[i];
+			}
+		}
+		ExchangePuzzleNode(puzzleNodeVector[min_location],puzzleNodeVector.back());
+			puzzleNodeVector.pop_back();
+
+		if (currentPuzzleNode.nextActionList.size() == 0) {
+			currentPuzzleNode = updatePuzzleNodeActionList(currentPuzzleNode);
+		}
+
+	}
+
+	if (checkObject(currentPuzzleNode, objPuzzleNode)) {
+
+		for (int i = 0; i < currentPuzzleNode.precedeActionList.size(); i++) {
+			outputAction(currentPuzzleNode.precedeActionList[i], i + 1);
+		}
+		cout << "æ‰¾åˆ°æ­£ç¡®ç»“æœ:" << endl;
+		for (int i = 0; i < 3; i++) {
+			cout << " " << currentPuzzleNode.puzzle[i * 3 + 0].puzzleId << "  " << currentPuzzleNode.puzzle[i * 3 + 1].puzzleId <<
+				"  " << currentPuzzleNode.puzzle[i * 3 + 2].puzzleId << endl;
+		}
+		cout << endl;
+
+		result[0] = 1;
+		result[1] = currentPuzzleNode.depth;
+		return result;
 	}
 
 	return result;
 }
 
-//¹ã¶ÈÓÅÏÈËÑË÷
+//å¹¿åº¦ä¼˜å…ˆæœç´¢
 int* binaryFirstSearchDemo(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode)
 {
 	//result[0] 1:correct;0:wrong
-	//result[1] ²½Êı steps 
+	//result[1] æ­¥æ•° steps 
 	int result[2] = { 0,0 };
 
-	cout << "³õÊ¼½Úµã×´Ì¬£º" << endl;
+	cout << "åˆå§‹èŠ‚ç‚¹çŠ¶æ€ï¼š" << endl;
 	for (int i = 0; i < 3; i++) {
 		cout << " " << initialNode.puzzle[i * 3 + 0].puzzleId << "  " << initialNode.puzzle[i * 3 + 1].puzzleId <<
 			"  " << initialNode.puzzle[i * 3 + 2].puzzleId << endl;
 	}
 	cout << endl;
 	/*
-		ÇëÔÚ¸ÃÎ»ÖÃÍê³É¹ã¶ÈÓÅÏÈËÑË÷º¯Êı¡£
+		è¯·åœ¨è¯¥ä½ç½®å®Œæˆå¹¿åº¦ä¼˜å…ˆæœç´¢å‡½æ•°ã€‚
 	*/
 	PUZZLE_NODE puzzleNode = initialNode;
 	queue<PUZZLE_NODE> puzzleNodeQueue;
@@ -132,7 +405,7 @@ int* binaryFirstSearchDemo(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode)
 			for (int i = 0; i < currentPuzzleNode.precedeActionList.size(); i++) {
 				outputAction(currentPuzzleNode.precedeActionList[i], i + 1);
 			}
-			cout << "ÕÒµ½ÕıÈ·½á¹û:" << endl;
+			cout << "æ‰¾åˆ°æ­£ç¡®ç»“æœ:" << endl;
 			for (int i = 0; i < 3; i++) {
 				cout << " " << currentPuzzleNode.puzzle[i * 3 + 0].puzzleId << "  " << currentPuzzleNode.puzzle[i * 3 + 1].puzzleId <<
 					"  " << currentPuzzleNode.puzzle[i * 3 + 2].puzzleId << endl;
@@ -167,13 +440,17 @@ int* binaryFirstSearchDemo(PUZZLE_NODE initialNode, PUZZLE_NODE objPuzzleNode)
 		}
 
 	}
+	
 	return result;
 }
 
-int main() {
+int main()
+{
 	PUZZLE_NODE objPuzzleNode;
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
+	for (int i = 0; i < 3; i++) 
+	{
+		for (int j = 0; j < 3; j++)
+		{
 			objPuzzleNode.puzzle[i * 3 + j].puzzleId = i * 3 + j;
 			objPuzzleNode.puzzle[i * 3 + j].xPosition = i;
 			objPuzzleNode.puzzle[i * 3 + j].yPosition = j;
@@ -182,66 +459,84 @@ int main() {
 	objPuzzleNode = updatePuzzleNodeActionList(objPuzzleNode);
 
 	int setup = 0;
-	while (setup != -1) {
+	while (setup != -1) 
+	{
 
 
 		visited.clear();
 		cout << "-------------------------------------------------" << endl;
-		cout << "ÇëÊäÈëµ÷ÊÔÉèÖÃ:" << endl;
-		cout<< " -1:ÍË³ö; " << endl;
-		cout << "0:¹ã¶ÈÓÅÏÈËÑË÷Ê¾Àı;" << endl;
-		cout << "1:¹ã¶ÈÓÅÏÈËÑË÷; " << endl;
-		cout << "2:Éî¶ÈÓĞÏŞËÑË÷; " << endl;
-		cout << "3:Æô·¢Ê½ËÑË÷1; " << endl;
-		cout<<  "4:Æô·¢Ê½ËÑË÷2):" << endl; 
+		cout << "è¯·è¾“å…¥è°ƒè¯•è®¾ç½®:" << endl;
+		cout<< " -1:é€€å‡º; " << endl;
+		cout << "0:å¹¿åº¦ä¼˜å…ˆæœç´¢ç¤ºä¾‹;" << endl;
+		cout << "1:å¹¿åº¦ä¼˜å…ˆæœç´¢; " << endl;
+		cout << "2:æ·±åº¦æœ‰é™æœç´¢; " << endl;
+		cout << "3:å¯å‘å¼æœç´¢1; " << endl;
+		cout<<  "4:å¯å‘å¼æœç´¢2:" << endl; 
 		
 		cin >> setup;
-		int backwardSteps;
-		cout << "ÇëÊäÈë´óÓÚµÈÓÚ5Ğ¡ÓÚµÈÓÚ20µÄ»ØÍË²½Êı" << endl;
-		cin >> backwardSteps;
-		while (backwardSteps < 5 || backwardSteps >20) {
-			cout << "ÊäÈë´íÎó£¬ÇëÊäÈë´óÓÚµÈÓÚ5Ğ¡ÓÚµÈÓÚ20µÄ»ØÍË²½Êı" << endl;
-			cin >> backwardSteps;
-		}
 
-
-		PUZZLE_NODE initialNode = initialPuzzleNode(backwardSteps);
-
-
-		
-		int* result;
-		if (setup == 1) {
-			result = binaryFirstSearch(initialNode, objPuzzleNode);
-		}
-		else if (setup == 2) {
-			result = depthFirstSearch(initialNode, objPuzzleNode);
-		}
-		else if (setup == 3) {
-			result = heuristicSearchInformedByIncorrectNum(initialNode, objPuzzleNode);
-		}
-		else if (setup == 4) {
-			result = heuristicSearchInformedByManhattonDis(initialNode, objPuzzleNode);
-		}
-		else if (setup == 0) {
-			cout << "¹ã¶ÈÓÅÏÈËÑË÷Ê¾Àı:" << endl;
-			result = binaryFirstSearchDemo(initialNode, objPuzzleNode);
-		}
-		else {
-			cout << "ÊäÈëÉèÖÃÓĞÎó£¬ÇëÖØĞÂÔËĞĞ" << endl;
+		if (setup == -1)
+		{
+			cout << "ç»“æŸè¿è¡Œ" << endl;
 			cout << endl;
 			return 0;
-		}
 
-		if (result[0] == 1) {
-			cout << "½á¹ûÎªcorrect,²½ÊıÎª" << result[1] << endl;
 		}
-		else {
-			cout << "½á¹ûÎªwrong" << endl;
-		}
-		cout << "-------------------------------------------------" << endl;
+		else
+		{
+			cout << "è¯·è¾“å…¥å¤§äºç­‰äº5å°äºç­‰äº20çš„å›é€€æ­¥æ•°" << endl;
+			int backwardSteps;
+			cin >> backwardSteps;
+			while (backwardSteps < 5 || backwardSteps >20)
+			{
+				cout << "è¾“å…¥é”™è¯¯ï¼Œè¯·è¾“å…¥å¤§äºç­‰äº5å°äºç­‰äº20çš„å›é€€æ­¥æ•°" << endl;
+				cin >> backwardSteps;
+			}
+			PUZZLE_NODE initialNode = initialPuzzleNode(backwardSteps);
 
-		cout << endl;
+			int* result;
+			if (setup == 1)
+			{
+				result = binaryFirstSearch(initialNode, objPuzzleNode);
+			}
+			else if (setup == 2) 
+			{
+				result = depthFirstSearch(initialNode, objPuzzleNode);
+			}
+			else if (setup == 3) 
+			{
+				result = heuristicSearchInformedByIncorrectNum(initialNode, objPuzzleNode);
+			}
+			else if (setup == 4) 
+			{
+				result = heuristicSearchInformedByManhattonDis(initialNode, objPuzzleNode);
+			}
+			else if (setup == 0) 
+			{
+				cout << "å¹¿åº¦ä¼˜å…ˆæœç´¢ç¤ºä¾‹:" << endl;
+				result = binaryFirstSearchDemo(initialNode, objPuzzleNode);
+			}
+			else 
+			{
+				cout << "è¾“å…¥è®¾ç½®æœ‰è¯¯ï¼Œè¯·é‡æ–°è¿è¡Œ" << endl;
+				cout << endl;
+				return 0;
+			}
+
+			if (result[0] == 1) 
+			{
+				cout << "ç»“æœä¸ºcorrect,æ­¥æ•°ä¸º" << result[1] << endl;
+			}
+			else 
+			{
+				cout << "ç»“æœä¸ºwrong" << endl;
+			}
+			cout << "-------------------------------------------------" << endl;
+
+			cout << endl;
+		}
 	}
 	return 0;
 
 }
+
